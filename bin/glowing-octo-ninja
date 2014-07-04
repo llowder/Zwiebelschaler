@@ -99,11 +99,11 @@ elif [ $fact_src == 'user' ]; then
   fi
   for node in $CERTLIST; do
     echo "Looking up hiera() call values for ${node}."
-    for ch in $HIERA_LIST ; do echo "${HIERA_CMD} ${node} $ch"; echo "${ch} is $( ${HIERA_CMD} -m ${node} $ch)"; done
+    for ch in $HIERA_LIST ; do echo "${ch} is $( ${HIERA_CMD} -m ${node} $ch)"; done
     echo "Looking up hiera_array() call values for ${node}."
-    for cha in $HIERA_A_LIST ; do echo "${HIERA_CMD} -a -m ${node} $cha";echo "${cha} is $( ${HIERA_CMD} -a -m ${node} $cha)"; done
+    for cha in $HIERA_A_LIST ; do echo "${cha} is $( ${HIERA_CMD} -a -m ${node} $cha)"; done
     echo "Looking up hiera_hash() call values for ${node}."
-    for chh in $HIERA_H_LIST ; do echo "${HIERA_CMD} -h -m ${node}$chh";echo "${chh} is $( ${HIERA_CMD} -h -m ${node} $chh)"; done
+    for chh in $HIERA_H_LIST ; do echo "${chh} is $( ${HIERA_CMD} -h -m ${node} $chh)"; done
   done
 else
   echo "Unknown fact source. Exiting."
