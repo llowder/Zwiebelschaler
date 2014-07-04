@@ -2,7 +2,7 @@
 
 #@Author    FriedBob
 #@Date      2014.07.1
-#@Version   0.0.1-beta-1
+#@Version   0.0.2
 #@Namespace friedbob_scripts
 
 __SBT_SHUTUP=true
@@ -17,12 +17,33 @@ LONG_OPTS="yhelp,aml,user:,json,debug,filebase:"
 SHORT_OPTS="hyu:jdf:"
 FILE_BASE="."
 
+usage="$(basename "$0") [-h] [-f path] [-u user] [-y] [-j] [-d]
+
+where:
+
+- `-h` or `--help`
+  - Description: Outputs usage information
+- `-u <username>` or `--user <username>`
+  - Default: `peadmin`
+  - Description: The username to use when using mcollective as a fact source
+- `-y` or `--yaml`
+  - Description: Use `<clientcertname>.yaml` as the fact source.
+- `-j` or `--json`
+  - Description: Use `<clientcertname>.json` as the fact source.
+- `-d` or `--debug`
+  - Description: Enable the `--debug` flag when calling hiera.
+- `-f <path>' or `--filebase <path>`
+  - Default: `.`
+  - Description: The path to be prepended to `<clientcertname>.[yaml|json]` when doing filebased fact source is used.
+
+Note that only one of json, user or yaml can be specified."
+
 if (( $# == 0 )); then
   fact_src="user"
 else
   while core_getopts "${SHORT_OPTS}" opt "${LONG_OPTS}" "$@"; do
     case "${opt}" in
-      h | help ) echo "Help coming soon. Please refer to the readme for usage."; exit 0;;
+      h | help ) echo "$usage"; exit 0;;
       f | filebase) FILE_BASE=${OPTARG};;
       u | user )
         if $mutex_option; then echo "Please set only one of user, yaml or json options."; exit 1; fi

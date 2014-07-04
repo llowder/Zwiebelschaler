@@ -27,7 +27,7 @@ Since facts are often needed to traverse the hiera hierarchy, it can use mcollec
   - **Description**: The path to be prepended to `<clientcertname>.[yaml|json]` when doing filebased fact source.
 
 ##Installation
-Simply clone the rep, and copy `glowing-octo-ninja` into somewhere in your path or add the bin directory to your path.. If you have [StupidBashTard](https://github.com/KyleJHarper/stupidbashtard) installed, please change the source line to source that instead of my modified version.  The path to  `sbt_libs.sh` will also need to be updated if you do not add the bin folder to your path.
+Simply clone the repo, and copy `glowing-octo-ninja` into somewhere in your path or add the bin directory to your path.. If you have [StupidBashTard](https://github.com/KyleJHarper/stupidbashtard) installed, please change the source line to source that instead of my modified version.  The path to  `sbt_libs.sh` will also need to be updated if you do not add the bin folder to your path.
 
 ##To Do
 1. Fix the internal help
