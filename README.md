@@ -9,6 +9,23 @@ This will get a list of all certnames that the puppet aster knows about, then sc
 Since facts are often needed to traverse the hiera hierarchy, it can use mcollective, yaml files or json files as the source of these facts when making the lookups.
 
 ##Usage
+###Examples and Notes
+When called with no options, it will act the same as if you passed in `-u peadmin`
+
+```
+# ./glowing-octo-ninja
+Looking up hiera() call values for pe-323-master.domain.tld.
+bar is text
+pe_puppetdb::pe::database::reserved_non_postgresql_memory_in_bytes is nil
+Looking up hiera_array() call values for pe-323-master.domain.tld.
+bat is ["array1", "array2"]
+Looking up hiera_hash() call values for pe-323-master.domain.tld.
+baz is {"key1"=>"value1", "key2"=>"value2"}
+pe_puppetdb::pe::database::database_config_hash is nil
+pe_puppetdb::pe::java_args is nil
+```
+
+When called with the `--yaml` or `--json` options, a file will need to be created for each certificate that holds key-value pairs for any variables used in your hierarchy.
 
 ###Options
 - `-h` or `--help`
@@ -25,6 +42,8 @@ Since facts are often needed to traverse the hiera hierarchy, it can use mcollec
 - `-f <path>' or `--filebase <path>`
   - **Default**: `.`
   - **Description**: The path to be prepended to `<clientcertname>.[yaml|json]` when doing filebased fact source.
+
+
 
 ##Installation
 Simply clone the repo, and copy `glowing-octo-ninja` into somewhere in your path or add the bin directory to your path.. If you have [StupidBashTard](https://github.com/KyleJHarper/stupidbashtard) installed, please change the source line to source that instead of my modified version.  The path to  `sbt_libs.sh` will also need to be updated if you do not add the bin folder to your path.

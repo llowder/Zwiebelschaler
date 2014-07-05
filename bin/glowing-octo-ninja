@@ -21,20 +21,20 @@ usage="$(basename "$0") [-h] [-f path] [-u user] [-y] [-j] [-d]
 
 where:
 
-- `-h` or `--help`
+- -h or --help
   - Description: Outputs usage information
-- `-u <username>` or `--user <username>`
-  - Default: `peadmin`
+- -u <username> or --user <username>
+  - Default: peadmin
   - Description: The username to use when using mcollective as a fact source
-- `-y` or `--yaml`
-  - Description: Use `<clientcertname>.yaml` as the fact source.
-- `-j` or `--json`
-  - Description: Use `<clientcertname>.json` as the fact source.
-- `-d` or `--debug`
-  - Description: Enable the `--debug` flag when calling hiera.
-- `-f <path>' or `--filebase <path>`
-  - Default: `.`
-  - Description: The path to be prepended to `<clientcertname>.[yaml|json]` when doing filebased fact source is used.
+- -y or --yaml
+  - Description: Use <clientcertname>.yaml as the fact source.
+- -j or --json
+  - Description: Use <clientcertname>.json as the fact source.
+- -d or --debug
+  - Description: Enable the --debug flag when calling hiera.
+- -f <path> or --filebase <path>
+  - Default: .
+  - Description: The path to be prepended to <clientcertname>.[yaml|json] when doing filebased fact source is used.
 
 Note that only one of json, user or yaml can be specified."
 
