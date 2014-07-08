@@ -53,11 +53,13 @@ Simply clone the repo, and copy `glowing-octo-ninja` into somewhere in your path
 1. Locate and lookup class parameters
 2. Add ability to specify as single variable to look up across all nodes
 3. Add ability to specify a plaintext key=value file per node as a fact source
-4. Unit and regression tests
-5. Provide an option to tell you what variables are used by `hiera.yaml`
-6. ??????
-7. Profit
-8. Same thing we do every night - try to take over the world!
+4. Add ability to look up all variables for a single node
+5. Add ability to specify a group of ndoes via regex
+6. Unit and regression tests
+7. Provide an option to tell you what variables are used by `hiera.yaml`
+8. ??????
+9. Profit
+10. Same thing we do every night - try to take over the world!
 
 ##License
 See LICENSE
