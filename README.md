@@ -49,13 +49,15 @@ When called with the `--yaml` or `--json` options, a file will need to be create
 Simply clone the repo, and copy `glowing-octo-ninja` into somewhere in your path or add the bin directory to your path.. If you have [StupidBashTard](https://github.com/KyleJHarper/stupidbashtard) installed, please change the source line to source that instead of my modified version.  The path to  `sbt_libs.sh` will also need to be updated if you do not add the bin folder to your path.
 
 ##To Do
-1. Fix the internal help
-2. Locate and lookup class parameters
-3. Unit and regression tests
-4. Provide an option to tell you what variables are used by `hiera.yaml`
-5. ??????
-6. Profit
-7. Same thing we do every night - try to take over the world!
+1. ~~Fix the internal help~~
+1. Locate and lookup class parameters
+2. Add ability to specify as single variable to look up across all nodes
+3. Add ability to specify a plaintext key=value file per node as a fact source
+4. Unit and regression tests
+5. Provide an option to tell you what variables are used by `hiera.yaml`
+6. ??????
+7. Profit
+8. Same thing we do every night - try to take over the world!
 
 ##License
 See LICENSE
