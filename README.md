@@ -4,7 +4,7 @@
 ##About
 This is a project designed to make debugging hiera related puppet issues easier.
 
-This will get a list of all certnames that the puppet aster knows about, then scan your modulepath and find all explicit `hiera()`, `hiera_array()`, and `hiera_hash()` calls and extract the key names. It will then do the same hiera type of hiera lookup for each certificate the master is aware of.
+This will get a list of all certnames that the puppet after knows about, then scan your modulepath and find all explicit `hiera()`, `hiera_array()`, and `hiera_hash()` calls and extract the key names. It will then do the same hiera type of hiera lookup for each certificate the master is aware of.
 
 Since facts are often needed to traverse the hiera hierarchy, it can use mcollective, yaml files or json files as the source of these facts when making the lookups.
 
@@ -51,15 +51,16 @@ Simply clone the repo, and copy `glowing-octo-ninja` into somewhere in your path
 ##To Do
 1. ~~Fix the internal help~~
 1. Locate and lookup class parameters
-2. Add ability to specify as single variable to look up across all nodes
-3. Add ability to specify a plaintext key=value file per node as a fact source
-4. Add ability to look up all variables for a single node
-5. Add ability to specify a group of ndoes via regex
-6. Unit and regression tests
-7. Provide an option to tell you what variables are used by `hiera.yaml`
-8. ??????
-9. Profit
-10. Same thing we do every night - try to take over the world!
+1. Add ability to specify as single variable to look up across all nodes
+1. Add ability to specify a plaintext key=value file per node as a fact source
+1. Add ability to look up all variables for a single node
+1. Add ability to specify a group of ndoes via regex
+1. Unit and regression tests
+1. Add Directory Environment support
+1. Provide an option to tell you what variables are used by `hiera.yaml`
+1. ??????
+1. Profit
+1. Same thing we do every night - try to take over the world!
 
 ##License
 See LICENSE
@@ -69,7 +70,7 @@ If you need help, please look me up in #puppet on Freenode.  I am FriedBob. Plea
 
 ##FAQ
 - "Why"
-  - Why not? hiera can be tricky to debug, and there haven't been any solid ways todebug it so far.
+  - Why not? hiera can be tricky to debug, and there are notany solid, uncomplicated ways to debug it so far.
 - "Why 'glowing-octo-ninja'?
   - I suck at naming, and this was a suggested repo name, and ninjas make everything better.
 - "Why doesn't it...?"
