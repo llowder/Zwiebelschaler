@@ -31,7 +31,8 @@ When called with the `--yaml` or `--json` options, a file will need to be create
 - `-h` or `--help`
   - **Description**: Outputs usage information
 - `-u <username>` or `--user <username>` 
-  - **Default**: `peadmin`
+  - **Default**: `peadmin` for Puppet Enterprise
+  - **Default**: `puppet` for Puppet Open Source
   - **Description**: The username to use when using mcollective as a fact source 
 - `-y` or `--yaml`
   - **Description**: Use `<clientcertname>.yaml` as the fact source.
@@ -79,3 +80,4 @@ If you need help, please look me up in #puppet on Freenode.  I am FriedBob. Plea
 
 ##Acknowledgements, Thanks And Shoutouts
  - Many thanks to Kyle "Mr. Bash" Harper for his assistance with writing this.
+ - Thanks to [Brad Quellhorst](https://github.com/bradq) for bug fixes and improved library handling.
