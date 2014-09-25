@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #@Author    FriedBob
-#@Date      2014.07.1
-#@Version   0.0.2
+#@Date      2014.9.24
+#@Version   0.0.3
 #@Namespace friedbob_scripts
 
 __SBT_SHUTUP=true
@@ -66,19 +66,65 @@ else
   done
 fi
 
-HIERADIR=$(/opt/puppet/bin/puppet config print hiera_config)
-CERTLIST_RAW=$(/opt/puppet/bin/puppet cert list --all | grep -Pho "(?<=\+ \")([a-z0-9-_.]+)")
+#need to determine the path for Puppet, rather than hardcoding the PE path
+PUPPET_BIN=$(which puppet)
+#PUPPET_BIN="${PUPPET_PATH}/puppet"
+
+#Need the configdir
+CONFIGDIR=$($PUPPET_BIN config print confdir 2> /dev/null)
+
+# Need to determine if we are using directory environments or config eviron
+ENVIRONMENTPATH=$($PUPPET_BIN config print environmentpath 2> /dev/null)
+BASEMODULEPATH=$($PUPPET_BIN config print basemodulepath 2> /dev/null)
+
+if [ $ENVIRONMENTPATH == '']; then #config directories are in play
+  if grep -qe  "modulepath.*[$][::]\?environment" $CONFIGDIR/puppet.conf; then # Dynamic Environments 
+    modulelist=""
+    for m in $(grep -P  '^[\s]*modulepath' $CONFIGDIR/puppet.conf | cut -d'=' -f2 | awk 'BEGIN {RS = ":"} ; {print $0}')
+      do 
+        if grep -P '\$(::)?environment' <<<"$m" | grep -Po '^[$|/][a-zA-Z/]*'; then 
+            if [[ $m =~ '$confdir' ]]; then
+              kladsjhfiladhfklasjdfghldksj="$(echo $m | grep -Po '^[$|/][a-zA-Z/]*')"
+              modulelist="$modulelist ${kladsjhfiladhfklasjdfghldksj/\$confdir/$CONFIGDIR}"
+            else
+              modulelist="$modulelist $(echo $m | grep -Po '^[$|/][a-zA-Z/]*')"  
+            fi
+        else
+          if [[ $m =~ '$confdir' ]]; then
+            modulelist="$modulelist ${m/\$confdir/${CONFIGDIR}}"
+          else
+            modulelist="$modulelist $m"
+          fi
+        fi
+      done
+  else #Static config directory
+    modulelist=$($PUPPET_BIN config print modulepath | sed -e "s/:/ /g")
+  fi
+else #Directory environments are being used
+  if [[ $ENVIRONMENTPATH =~ '$confdir' ]]; then
+    mod_ep="${ENVIRONMENTPATH/'$confdir'/${CONFIGDIR}}"
+  else
+    mod_ep="$ENVIRONMENTPATH"
+  fi
+  if [[ $BASEMODULEPATH =~ '$confdir' ]]; then
+    mod_bmp="${BASEMODULEPATH/'$confdir'/${CONFIGDIR}}"
+  else
+    mod_bmp="$BASEMODULEPATH"
+  fi
+  modulelist="$mod_ep $mod_bmp"
+fi
+
+declare -r HIERADIR=$(${PUPPET_BIN} config print hiera_config 2> /dev/null)
+declare -r CERTLIST_RAW=$(${PUPPET_BIN} cert list --all 2> /dev/null | grep -Pho "(?<=\+ \")([a-z0-9-_.]+)")
 CERTLIST=""
-VARLIST=$(grep -Pho "(?<=%\{)(.+)(?=\})" ${HIERADIR})
-#Still need to deal with the special case of dynamic environments
-MODULEPATH=$(/opt/puppet/bin/puppet config print modulepath | sed -e "s/:/ /g")
+declare -r VARLIST=$(grep -Pho "(?<=%\{)(.+)(?=\})" ${HIERADIR})
 #Still need to account for automatic parameter lookups
-HIERA_LIST=$(for h in $MODULEPATH; do grep -PIRho "(?<=hiera\(['|\"|$])([^'|^\"|^,|^\)]+)" $h | sort -u; done)
-HIERA_A_LIST=$(for ha in $MODULEPATH; do grep -PIRho "(?<=hiera_array\(['|\"|$])([^'|^\"|^,|^\)]+)" $ha | sort -u; done)
-HIERA_H_LIST=$(for hh in $MODULEPATH; do grep -PIRho "(?<=hiera_hash\(['|\"|$])([^'|^\"|^,|^\)]+)" $hh | sort -u; done)
-HIERA_BASE_OPTS="-c ${HIERADIR}"
-HIERA="/opt/puppet/bin/hiera"
-HIERA_BASE_CMD="${HIERA} ${HIERA_BASE_OPTS}"
+declare -r HIERA_LIST=$(for h in $modulelist; do grep -PIRho "(?<=hiera\(['|\"|$])([^'|^\"|^,|^\)]+)" $h | sort -u; done)
+declare -r HIERA_A_LIST=$(for ha in $modulelist; do grep -PIRho "(?<=hiera_array\(['|\"|$])([^'|^\"|^,|^\)]+)" $ha | sort -u; done)
+declare -r HIERA_H_LIST=$(for hh in $modulelist; do grep -PIRho "(?<=hiera_hash\(['|\"|$])([^'|^\"|^,|^\)]+)" $hh | sort -u; done)
+declare -r HIERA_BASE_OPTS="-c ${HIERADIR}"
+declare -r HIERA="/opt/puppet/bin/hiera"
+declare -r HIERA_BASE_CMD="${HIERA} ${HIERA_BASE_OPTS}"
 HIERA_CMD="{$HIERA_BASE_CMD} ${HIERA_EXTRA_OPTS}"
 
 for cert in $CERTLIST_RAW; do
