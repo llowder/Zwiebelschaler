@@ -68,7 +68,6 @@ fi
 
 #need to determine the path for Puppet, rather than hardcoding the PE path
 PUPPET_BIN=$(which puppet)
-#PUPPET_BIN="${PUPPET_PATH}/puppet"
 
 #Need the configdir
 CONFIGDIR=$($PUPPET_BIN config print confdir 2> /dev/null)
