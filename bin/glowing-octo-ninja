@@ -11,6 +11,35 @@ __SBT_VERBOSE='false'
 BIN_DIR="$(dirname $(readlink -f "${BASH_SOURCE}"))"
 . "${BIN_DIR}/../lib/sbt_libs.sh"
 
+# Create a function for usage... because the original multi-line variable scares me...
+function usage {
+  # Switching away from multi-line by building the variable here.
+  local msg="\n$(basename "${0}") [-h] [-f path] [-u user] [-y] [-j] [-d]"
+        msg+="\n"
+        msg+="\nwhere:"
+        msg+="\n"
+        msg+="\n- -h or --help"
+        msg+="\n  - Description: Outputs usage information"
+        msg+="\n- -u <username> or --user <username>"
+        msg+="\n  - Default: peadmin for Puppet Enterprise"
+        msg+="\n  - Default: puppet for Puppet Open Source"
+        msg+="\n  - Description: The username to use when using mcollective as a fact source"
+        msg+="\n- -y or --yaml"
+        msg+="\n  - Description: Use <clientcertname>.yaml as the fact source."
+        msg+="\n- -j or --json"
+        msg+="\n  - Description: Use <clientcertname>.json as the fact source."
+        msg+="\n- -d or --debug"
+        msg+="\n  - Description: Enable the --debug flag when calling hiera."
+        msg+="\n- -f <path> or --filebase <path>"
+        msg+="\n  - Default: ."
+        msg+="\n  - Description: The path to be prepended to <clientcertname>.[yaml|json] when doing filebased fact source is used."
+        msg+="\n"
+        msg+="\nNote that only one of json, user or yaml can be specified."
+
+  echo -e "${msg}"
+  return 0
+}
+
 #Need to determine the path for Puppet, rather than hardcoding the PE path
 declare -r PUPPET_BIN="$(which puppet)"
 declare    USER_NAME="puppet"
@@ -24,35 +53,13 @@ declare -r LONG_OPTS="help,yaml,user:,json,debug,filebase:"
 declare -r SHORT_OPTS="hyu:jdf:"
 declare -r FILE_BASE="."
 
-usage="$(basename "${0}") [-h] [-f path] [-u user] [-y] [-j] [-d]
-
-where:
-
-- -h or --help
-  - Description: Outputs usage information
-- -u <username> or --user <username>
-  - Default: peadmin for Puppet Enterprise
-  - Default: puppet for Puppet Open Source
-  - Description: The username to use when using mcollective as a fact source
-- -y or --yaml
-  - Description: Use <clientcertname>.yaml as the fact source.
-- -j or --json
-  - Description: Use <clientcertname>.json as the fact source.
-- -d or --debug
-  - Description: Enable the --debug flag when calling hiera.
-- -f <path> or --filebase <path>
-  - Default: .
-  - Description: The path to be prepended to <clientcertname>.[yaml|json] when doing filebased fact source is used.
-
-Note that only one of json, user or yaml can be specified."
-
 if (( $# == 0 )); then
   fact_src="user"
 else
   mutex_option='false'
   while core_getopts "${SHORT_OPTS}" opt "${LONG_OPTS}" "$@"; do
     case "${opt}" in
-      h | help ) echo "${usage}"; exit 0;;
+      h | help ) usage; exit 0;;
       f | filebase ) FILE_BASE="${OPTARG}";;
       u | user )
         if ${mutex_option}; then echo "Please set only one of user, yaml or json options."; exit 1; fi
