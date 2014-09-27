@@ -12,21 +12,17 @@ BIN_DIR="$(dirname $(readlink -f "$BASH_SOURCE"))"
 . "$BIN_DIR/../lib/sbt_libs.sh"
 
 #Need to determine the path for Puppet, rather than hardcoding the PE path
-PUPPET_BIN="$(which puppet)"
-hiera_extra_ops=""
-
+declare -r PUPPET_BIN="$(which puppet)"
+declare    USER_NAME="puppet"
+declare    ENTERPRISE='false'
 if [[ $($PUPPET_BIN --version) =~ "Enterprise" ]]; then
-  user_name="peadmin"
+  USER_NAME="peadmin"
   ENTERPRISE='true'
-else
-  user_name="puppet"
-  ENTERPRISE='false'
 fi
 
-fact_src=""
-LONG_OPTS="help,yaml,user:,json,debug,filebase:"
-SHORT_OPTS="hyu:jdf:"
-FILE_BASE="."
+declare -r LONG_OPTS="help,yaml,user:,json,debug,filebase:"
+declare -r SHORT_OPTS="hyu:jdf:"
+declare -r FILE_BASE="."
 
 usage="$(basename "$0") [-h] [-f path] [-u user] [-y] [-j] [-d]
 
@@ -80,11 +76,11 @@ else
 fi
 
 #Need the configdir
-CONFIGDIR="$($PUPPET_BIN config print confdir 2> /dev/null)"
+declare -r CONFIGDIR="$($PUPPET_BIN config print confdir 2> /dev/null)"
 
 # Need to determine if we are using directory environments or config eviron
-ENVIRONMENTPATH="$($PUPPET_BIN config print environmentpath 2> /dev/null)"
-BASEMODULEPATH="$($PUPPET_BIN config print basemodulepath 2> /dev/null)"
+declare -r ENVIRONMENTPATH="$($PUPPET_BIN config print environmentpath 2> /dev/null)"
+declare -r BASEMODULEPATH="$($PUPPET_BIN config print basemodulepath 2> /dev/null)"
 
 if [ "$ENVIRONMENTPATH" == '']; then #config directories are in play
   if grep -qe  "modulepath.*[$][::]\?environment" "$CONFIGDIR/puppet.conf"; then # Dynamic Environments
