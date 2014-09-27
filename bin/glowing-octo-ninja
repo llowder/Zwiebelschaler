@@ -5,22 +5,22 @@
 #@Version   0.1.1
 #@Namespace friedbob_scripts
 
-__SBT_SHUTUP=true
-__SBT_VERBOSE=false
+__SBT_SHUTUP='true'
+__SBT_VERBOSE='false'
 
-BIN_DIR=$(dirname $(readlink -f "$BASH_SOURCE"))
-. $BIN_DIR/../lib/sbt_libs.sh
+BIN_DIR="$(dirname $(readlink -f "$BASH_SOURCE"))"
+. "$BIN_DIR/../lib/sbt_libs.sh"
 
 #Need to determine the path for Puppet, rather than hardcoding the PE path
-PUPPET_BIN=$(which puppet)
+PUPPET_BIN="$(which puppet)"
 hiera_extra_ops=""
 
 if [[ $($PUPPET_BIN --version) =~ "Enterprise" ]]; then
   user_name="peadmin"
-  ENTERPRISE=true
+  ENTERPRISE='true'
 else
   user_name="puppet"
-  ENTERPRISE=false
+  ENTERPRISE='false'
 fi
 
 fact_src=""
@@ -53,24 +53,24 @@ Note that only one of json, user or yaml can be specified."
 if (( $# == 0 )); then
   fact_src="user"
 else
-  mutex_option=false
+  mutex_option='false'
   while core_getopts "${SHORT_OPTS}" opt "${LONG_OPTS}" "$@"; do
     case "${opt}" in
       h | help ) echo "$usage"; exit 0;;
-      f | filebase ) FILE_BASE=${OPTARG};;
+      f | filebase ) FILE_BASE="${OPTARG}";;
       u | user )
         if $mutex_option; then echo "Please set only one of user, yaml or json options."; exit 1; fi
-        mutex_option=true
+        mutex_option='true'
         fact_src="user"
         hiera_extra_opts="${hiera_extra_opts} -m";;
       y | yaml )
         if $mutex_option; then echo "Please set only one of user, yaml or json options."; exit 1; fi
-        mutex_option=true
+        mutex_option='true'
         fact_src="yaml"
         hiera_extra_opts="${hiera_extra_opts} -y ${OPTARG}";;
       j | json )
         if $mutex_option; then echo "Please set only one of user, yaml or json options."; exit 1; fi
-        mutex_option=true
+        mutex_option='true'
         fact_src="json"
         hiera_extra_opts="${hiera_extra_opts} -j" ;;
       d | debug ) hiera_extra_opts="${hiera_extra_opts} --debug" ;;
@@ -80,26 +80,26 @@ else
 fi
 
 #Need the configdir
-CONFIGDIR=$($PUPPET_BIN config print confdir 2> /dev/null)
+CONFIGDIR="$($PUPPET_BIN config print confdir 2> /dev/null)"
 
 # Need to determine if we are using directory environments or config eviron
-ENVIRONMENTPATH=$($PUPPET_BIN config print environmentpath 2> /dev/null)
-BASEMODULEPATH=$($PUPPET_BIN config print basemodulepath 2> /dev/null)
+ENVIRONMENTPATH="$($PUPPET_BIN config print environmentpath 2> /dev/null)"
+BASEMODULEPATH="$($PUPPET_BIN config print basemodulepath 2> /dev/null)"
 
-if [ $ENVIRONMENTPATH == '']; then #config directories are in play
-  if grep -qe  "modulepath.*[$][::]\?environment" $CONFIGDIR/puppet.conf; then # Dynamic Environments 
+if [ "$ENVIRONMENTPATH" == '']; then #config directories are in play
+  if grep -qe  "modulepath.*[$][::]\?environment" "$CONFIGDIR/puppet.conf"; then # Dynamic Environments
     modulelist=""
     for m in $(grep -P  '^[\s]*modulepath' $CONFIGDIR/puppet.conf | cut -d'=' -f2 | awk 'BEGIN {RS = ":"} ; {print $0}')
-      do 
-        if grep -P '\$(::)?environment' <<<"$m" | grep -Po '^[$|/][a-zA-Z/]*'; then 
-            if [[ $m =~ '$confdir' ]]; then
+      do
+        if grep -P '\$(::)?environment' <<<"$m" | grep -Po '^[$|/][a-zA-Z/]*'; then
+            if [[ "$m" =~ '$confdir' ]]; then
               kladsjhfiladhfklasjdfghldksj="$(echo $m | grep -Po '^[$|/][a-zA-Z/]*')"
               modulelist="$modulelist ${kladsjhfiladhfklasjdfghldksj/\$confdir/$CONFIGDIR}"
             else
-              modulelist="$modulelist $(echo $m | grep -Po '^[$|/][a-zA-Z/]*')"  
+              modulelist="$modulelist $(echo $m | grep -Po '^[$|/][a-zA-Z/]*')"
             fi
         else
-          if [[ $m =~ '$confdir' ]]; then
+          if [[ "$m" =~ '$confdir' ]]; then
             modulelist="$modulelist ${m/\$confdir/${CONFIGDIR}}"
           else
             modulelist="$modulelist $m"
@@ -107,7 +107,7 @@ if [ $ENVIRONMENTPATH == '']; then #config directories are in play
         fi
       done
   else #Static config directory
-    modulelist=$($PUPPET_BIN config print modulepath | sed -e "s/:/ /g")
+    modulelist="$($PUPPET_BIN config print modulepath | sed -e "s/:/ /g")"
   fi
 else #Directory environments are being used
   if [[ $ENVIRONMENTPATH =~ '$confdir' ]]; then
@@ -123,50 +123,50 @@ else #Directory environments are being used
   modulelist="$mod_ep $mod_bmp"
 fi
 
-declare -r HIERADIR=$(${PUPPET_BIN} config print hiera_config 2> /dev/null)
-declare -r CERTLIST_RAW=$(${PUPPET_BIN} cert list --all 2> /dev/null | grep -Pho "(?<=\+ \")([a-z0-9-_.]+)")
-CERTLIST=""
-declare -r VARLIST=$(grep -Pho "(?<=%\{)(.+)(?=\})" ${HIERADIR})
+declare -r HIERADIR="$(${PUPPET_BIN} config print hiera_config 2> /dev/null)"
+declare -r CERTLIST_RAW="$(${PUPPET_BIN} cert list --all 2> /dev/null | grep -Pho "(?<=\+ \")([a-z0-9-_.]+)")"
+declare    CERTLIST=""
+declare -r VARLIST="$(grep -Pho "(?<=%\{)(.+)(?=\})" ${HIERADIR})"
 #Still need to account for automatic parameter lookups
-declare -r HIERA_LIST=$(for h in $modulelist; do grep -PIRho "(?<=hiera\(['|\"|$])([^'|^\"|^,|^\)]+)" $h | sort -u; done)
-declare -r HIERA_A_LIST=$(for ha in $modulelist; do grep -PIRho "(?<=hiera_array\(['|\"|$])([^'|^\"|^,|^\)]+)" $ha | sort -u; done)
-declare -r HIERA_H_LIST=$(for hh in $modulelist; do grep -PIRho "(?<=hiera_hash\(['|\"|$])([^'|^\"|^,|^\)]+)" $hh | sort -u; done)
+declare -r HIERA_LIST="$(for h in $modulelist; do grep -PIRho "(?<=hiera\(['|\"|$])([^'|^\"|^,|^\)]+)" $h | sort -u; done)"
+declare -r HIERA_A_LIST="$(for ha in $modulelist; do grep -PIRho "(?<=hiera_array\(['|\"|$])([^'|^\"|^,|^\)]+)" $ha | sort -u; done)"
+declare -r HIERA_H_LIST="$(for hh in $modulelist; do grep -PIRho "(?<=hiera_hash\(['|\"|$])([^'|^\"|^,|^\)]+)" $hh | sort -u; done)"
 declare -r HIERA_BASE_OPTS="-c ${HIERADIR}"
 declare -r HIERA="$(which hiera)"
 declare -r HIERA_BASE_CMD="${HIERA} ${HIERA_BASE_OPTS}"
-HIERA_CMD="{$HIERA_BASE_CMD} ${HIERA_EXTRA_OPTS}"
+declare -r HIERA_CMD="{$HIERA_BASE_CMD} ${HIERA_EXTRA_OPTS}"
 
 for cert in $CERTLIST_RAW; do
   if [ "$cert" == "${cert/pe-internal-/}" ]; then CERTLIST="${CERTLIST} ${cert}"; fi
 done
 
-if [ $fact_src == 'yaml' ]; then
+if [ "$fact_src" == 'yaml' ]; then
   for node in $CERTLIST; do
     if [ -f "${node}.yaml" ]; then
       echo "Looking up hiera() call values for ${node}."
-      for ch in $HIERA_LIST ; do ${HIERA_CMD} ${FILE_BASE}/${node}.yaml $ch; done
+      for ch in $HIERA_LIST ; do ${HIERA_CMD} "${FILE_BASE}/${node}.yaml" "$ch"; done
       echo "Looking up hiera_array() call values for ${node}."
-      for cha in $HIERA_A_LIST ; do ${HIERA__CMD} ${FILE_BASE}/${node}.yaml -a $cha; done
+      for cha in $HIERA_A_LIST ; do ${HIERA__CMD} "${FILE_BASE}/${node}.yaml" -a "$cha"; done
       echo "Looking up hiera_hash() call values for ${node}."
-      for chh in $HIERA_H_LIST ; do ${HIERA_BASE_CMD} ${FILE_BASE}/${node}.yaml -h $chh; done
+      for chh in $HIERA_H_LIST ; do ${HIERA_BASE_CMD} "${FILE_BASE}/${node}.yaml" -h "$chh"; done
     else
       echo "Warning, could not find ${node}.yaml. Skipping."
     fi
   done
-elif [ $fact_src == 'json' ]; then
+elif [ "$fact_src" == 'json' ]; then
   for node in $CERTLIST; do
     if [ -f "${node}.json" ]; then
       echo "Looking up hiera() call values for ${node}."
-      for ch in $HIERA_LIST ; do ${HIERA_CMD} ${FILE_BASE}/${node}.json $ch; done
+      for ch in $HIERA_LIST ; do ${HIERA_CMD} "${FILE_BASE}/${node}.json" "$ch"; done
       echo "Looking up hiera_array() call values for ${node}."
-      for cha in $HIERA_A_LIST ; do ${HIERA__CMD} ${FILE_BASE}/${node}.json -a $cha; done
+      for cha in $HIERA_A_LIST ; do ${HIERA__CMD} "${FILE_BASE}/${node}.json" -a "$cha"; done
       echo "Looking up hiera_hash() call values for ${node}."
-      for chh in $HIERA_H_LIST ; do ${HIERA_BASE_CMD} ${FILE_BASE}/${node}.json -h $chh; done
+      for chh in $HIERA_H_LIST ; do ${HIERA_BASE_CMD} "${FILE_BASE}/${node}.json" -h "$chh"; done
     else
       echo "Warning, could not find ${node}.json. Skipping."
     fi
   done
-elif [ $fact_src == 'user' ]; then
+elif [ "$fact_src" == 'user' ]; then
   if $(grep -qF "${user_name}" /etc/passwd); then
     HIERA_CMD="sudo -u ${user_name} ${HIERA} ${hiera_extra_opts} ${HIERA_BASE_OPTS}"
   else
@@ -175,11 +175,11 @@ elif [ $fact_src == 'user' ]; then
   fi
   for node in $CERTLIST; do
     echo "Looking up hiera() call values for ${node}."
-    for ch in $HIERA_LIST ; do echo "${ch} is $( ${HIERA_CMD} -m ${node} $ch)"; done
+    for ch in $HIERA_LIST ; do echo "${ch} is $( ${HIERA_CMD} -m "${node}" "$ch")"; done
     echo "Looking up hiera_array() call values for ${node}."
-    for cha in $HIERA_A_LIST ; do echo "${cha} is $( ${HIERA_CMD} -a -m ${node} $cha)"; done
+    for cha in $HIERA_A_LIST ; do echo "${cha} is $( ${HIERA_CMD} -a -m "${node}" "$cha")"; done
     echo "Looking up hiera_hash() call values for ${node}."
-    for chh in $HIERA_H_LIST ; do echo "${chh} is $( ${HIERA_CMD} -h -m ${node} $chh)"; done
+    for chh in $HIERA_H_LIST ; do echo "${chh} is $( ${HIERA_CMD} -h -m "${node}" "$chh")"; done
   done
 else
   echo "Unknown fact source. Exiting."
