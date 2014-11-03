@@ -72,7 +72,7 @@ If you need help, please look me up in #puppet on Freenode.  I am FriedBob. Plea
 
 ##FAQ
 - "Why"
-  - Why not? hiera can be tricky to debug, and there are notany solid, uncomplicated ways to debug it so far.
+  - Why not? hiera can be tricky to debug, and there are not any solid, uncomplicated ways to debug it so far.
 - "Why 'glowing-octo-ninja'?
   - I suck at naming, and this was a suggested repo name, and ninjas make everything better.
 - "Why doesn't it...?"
