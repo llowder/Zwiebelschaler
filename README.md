@@ -51,7 +51,7 @@ Simply clone the repo, and copy `glowing-octo-ninja` into somewhere in your path
 
 ##To Do
 1. ~~Fix the internal help~~
-1. Locate and lookup class parameters
+1. ~~Locate and lookup class parameters~~
 1. Add ability to specify as single variable to look up across all nodes
 1. Add ability to specify a plaintext key=value file per node as a fact source
 1. Add ability to look up all variables for a single node
