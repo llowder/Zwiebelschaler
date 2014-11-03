@@ -86,7 +86,7 @@ CONFIGDIR=$($PUPPET_BIN config print confdir 2> /dev/null)
 ENVIRONMENTPATH=$($PUPPET_BIN config print environmentpath 2> /dev/null)
 BASEMODULEPATH=$($PUPPET_BIN config print basemodulepath 2> /dev/null)
 
-if [ $ENVIRONMENTPATH == '']; then #config directories are in play
+if [ $ENVIRONMENTPATH == '' ]; then #config directories are in play
   if grep -qe  "modulepath.*[$][::]\?environment" $CONFIGDIR/puppet.conf; then # Dynamic Environments 
     modulelist=""
     for m in $(grep -P  '^[\s]*modulepath' $CONFIGDIR/puppet.conf | cut -d'=' -f2 | awk 'BEGIN {RS = ":"} ; {print $0}')
