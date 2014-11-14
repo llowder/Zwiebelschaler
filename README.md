@@ -1,19 +1,19 @@
-#glowing-octo-ninja
+#Zwiebelschaler
 ==================
 
 ##About
-The Glowing Octo Ninja (GON) is  designed to make debugging hiera related puppet issues easier.
+Zwiebelschaler, formerly the Glowing Octo Ninja (GON) is  designed to make debugging hiera related puppet issues easier. 
 
-This will get a list of all certnames that the puppet after knows about, then scan your modulepath and find all explicit `hiera()`, `hiera_array()`, and `hiera_hash()` calls and extract the key names. It will then do the same hiera type of hiera lookup for each certificate the master is aware of.
+This will get a list of all certnames that the puppet after knows about, then scan your modulepath and find all explicit `hiera()`,`hiera_array()`, and `hiera_hash()` calls, as well as all class paramaters, and extract the key names. It will then do the same hiera type of hiera lookup for each certificate the master is aware of.
 
 Since facts are often needed to be able to properly traverse the hiera hierarchy, it can use mcollective, yaml files or json files as the source of these facts when making the lookups.
 
 ##Usage
 ###Examples and Notes
-When called with no options, it will act the same as if you passed in `-u peadmin`
+When called with no options, it will act the same as if you passed in `-u peadmin` if you use Puppet Enterprise and `-u puppet` otherwise.
 
 ```
-# ./glowing-octo-ninja
+# ./zwiebel
 Looking up hiera() call values for pe-323-master.domain.tld.
 bar is text
 pe_puppetdb::pe::database::reserved_non_postgresql_memory_in_bytes is nil
@@ -47,7 +47,7 @@ When called with the `--yaml` or `--json` options, a file will need to be create
 
 
 ##Installation
-Simply clone the repo, and copy `glowing-octo-ninja` into somewhere in your path or add the bin directory to your path.. If you have [StupidBashTard](https://github.com/KyleJHarper/stupidbashtard) installed, please change the source line to source that instead of my modified version.  The path to  `sbt_libs.sh` will also need to be updated if you do not add the bin folder to your path.
+Simply clone the repo, and copy `zwiebel` into somewhere in your path or add the bin directory to your path.. If you have [StupidBashTard](https://github.com/KyleJHarper/stupidbashtard) installed, please change the source line to source that instead of my modified version.  The path to  `sbt_libs.sh` will also need to be updated if you do not add the bin folder to your path.
 
 ##To Do
 1. ~~Fix the internal help~~
@@ -73,8 +73,10 @@ If you need help, please look me up in #puppet on Freenode.  I am FriedBob. Plea
 ##FAQ
 - "Why"
   - Why not? hiera can be tricky to debug, and there are not any solid, uncomplicated ways to debug it so far.
-- "Why 'glowing-octo-ninja'?
-  - I suck at naming, and this was a suggested repo name, and ninjas make everything better.
+- ~~"Why 'glowing-octo-ninja'?~~
+  - ~~I suck at naming, and this was a suggested repo name, and ninjas make everything better.~~
+- "Why Zwiebelschäler?"
+  - I lie the way it sounds. It means "onion peeler" and that is what it does - helps you peel away the layers in your hiera hierarchy so you can see where things come from.
 - "Why doesn't it...?"
   - This is an early release, more features are planned. Feature requests and PRs are welcome.
 
