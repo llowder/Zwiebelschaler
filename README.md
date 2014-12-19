@@ -56,6 +56,7 @@ Simply clone the repo, and copy `zwiebel` into somewhere in your path or add the
 1. Add ability to specify a plaintext key=value file per node as a fact source
 1. Add ability to look up all variables for a single node
 1. Add ability to specify a group of nodes via regex
+1. Make the UI not so <puke sounds>!! (Thanks to @AmandaSpeaking for this)
 1. Unit and regression tests
 1. ~~Add Directory Environment support~~
 1. Provide an option to tell you what variables are used by `hiera.yaml`

@@ -15,11 +15,11 @@ declare -r    BIN_DIR="$(dirname $(readlink -f "${BASH_SOURCE}"))"
 # Create a function for usage... because the original multi-line variable scares me...
 function usage {
   # Switching away from multi-line by building the variable here.
-  local msg="\n$(basename "${0}") [-h] [-f path] [-u user] [-y] [-j] [-d]"
+  local msg="\n$(basename "${0}") [-h] [-f path] [-u user] [-y] [-j] [-k key] [-d] [-a]"
         msg+="\n"
         msg+="\nwhere:"
         msg+="\n"
-        msg+="\n- -h or --help"
+        msg+="\n- --help"
         msg+="\n  - Description: Outputs usage information"
         msg+="\n- -u <username> or --user <username>"
         msg+="\n  - Default: peadmin for Puppet Enterprise"
@@ -29,11 +29,17 @@ function usage {
         msg+="\n  - Description: Use <clientcertname>.yaml as the fact source."
         msg+="\n- -j or --json"
         msg+="\n  - Description: Use <clientcertname>.json as the fact source."
+        msg+="\n- -k or --key"
+        msg+="\n  - Description: Look up the <key> as it is seen on all nodes."
         msg+="\n- -d or --debug"
         msg+="\n  - Description: Enable the --debug flag when calling hiera."
         msg+="\n- -f <path> or --filebase <path>"
         msg+="\n  - Default: ."
         msg+="\n  - Description: The path to be prepended to <clientcertname>.[yaml|json] when doing filebased fact source is used."
+        msg+="\n- -mode <mode>"
+        msg+="\n  - Default: all"
+        msg+="\n  - Description: What type of lookup to perform."
+        msg+="\n  - Acceptable Values: all, priority, array, hash"
         msg+="\n"
         msg+="\nNote that only one of json, user or yaml can be specified."
 
@@ -57,13 +63,18 @@ if [[ $("${PUPPET_BIN}" --version) =~ "Enterprise" ]]; then
   ENTERPRISE='true'
 fi
 
-declare -r LONG_OPTS="help,yaml,user:,json,debug,filebase:"
-declare -r SHORT_OPTS="hyu:jdf:"
+declare -r LONG_OPTS="help,yaml,user:,json,debug,filebase:,key:,mode:,node:"
+declare -r SHORT_OPTS="hyu:jdf:k:m:n:"
 declare -r FILE_BASE="."
 declare    fact_src="user"
+declare    key_name=''
+declare    node_name=''
+declare    singlekey='false'
+declare    lookuptype='all'
 
 if [ $# -gt 0 ]; then
   mutex_option='false'
+  mutex_mode='false'
   while core_getopts "${SHORT_OPTS}" opt "${LONG_OPTS}" "$@"; do
     case "${opt}" in
       h | help ) usage; exit 0;;
@@ -84,6 +95,25 @@ if [ $# -gt 0 ]; then
         fact_src="json"
         hiera_extra_opts="${hiera_extra_opts} -j" ;;
       d | debug ) hiera_extra_opts="${hiera_extra_opts} --debug" ;;
+      k | key ) 
+        keyname="${OPTARG}"
+        [[ -n "${keyname}" ]] || fail_sauce "Keyname is required for --key."
+        singlekey='true' ;;
+      m | mode )
+        case "${OPTARG}" in
+          'priority')
+            lookuptype='priority';;
+          'array')
+            lookuptype='array';;
+          'hash')
+            lookuptype='hash';;
+          'all')
+            lookuptype='all';;
+        esac
+      ;;
+      n | node )
+        nodename="${OPTARG}"
+        [[ -n nodename ]] || fail_sauce "Node name is required for --node.";;
       * ) echo "Unknown option -${OPTARG} (${opt})" >&2 ;;
     esac
   done
@@ -131,62 +161,72 @@ declare -r CERTLIST_RAW="$("${PUPPET_BIN}" cert list --all 2> /dev/null | grep -
 declare    CERTLIST=""
 declare -r VARLIST="$(grep -Pho "(?<=%\{)(.+)(?=\})" ${HIERADIR})"
 
-px=0
-for p in $(find / -name "*.pp" -exec awk -f ${BIN_DIR}/findparams.awk {} \;); do
-  HIERA_P_LIST[px]=$p
-  ((px++))
-done
+if [[ singlekey == 'true' ]]; then
+  HIERA_LIST=( "${key_name}" )
+  HIERA_A_LIST=( "${key_name}" )
+  HIERA_H_LIST=( "${key_name}" )
+  HIERA_P_LIST=( "${key_name}" )
+else
+  if [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+    px=0
+    for p in $(find / -name "*.pp" -exec awk -f ${BIN_DIR}/findparams.awk {} \;); do
+      HIERA_P_LIST[px]=$p
+      ((px++))
+    done
+    HIERA_LIST="$(for h in ${modulelist}; do grep -PIRho "(?<=hiera\(['|\"|$])([^'|^\"|^,|^\)]+)" ${h} | sort -u; done)"
+  elif [[ lookuptype -eq 'all' ]] || [[ lookuptype -eq 'array' ]]; then
+    HIERA_A_LIST="$(for ha in ${modulelist}; do grep -PIRho "(?<=hiera_array\(['|\"|$])([^'|^\"|^,|^\)]+)" ${ha} | sort -u; done)"
+  elif [[ lookuptype -eq 'all' ]] || [[ lookuptype -eq 'hash' ]]; then
+    HIERA_H_LIST="$(for hh in ${modulelist}; do grep -PIRho "(?<=hiera_hash\(['|\"|$])([^'|^\"|^,|^\)]+)" ${hh} | sort -u; done)"
+  fi
+fi
 
-declare -r HIERA_LIST="$(for h in ${modulelist}; do grep -PIRho "(?<=hiera\(['|\"|$])([^'|^\"|^,|^\)]+)" ${h} | sort -u; done)"
-declare -r HIERA_A_LIST="$(for ha in ${modulelist}; do grep -PIRho "(?<=hiera_array\(['|\"|$])([^'|^\"|^,|^\)]+)" ${ha} | sort -u; done)"
-declare -r HIERA_H_LIST="$(for hh in ${modulelist}; do grep -PIRho "(?<=hiera_hash\(['|\"|$])([^'|^\"|^,|^\)]+)" ${hh} | sort -u; done)"
 declare -r HIERA_BASE_OPTS="-c ${HIERADIR}"
 declare -r HIERA="$(which hiera)"
 declare -r HIERA_BASE_CMD="${HIERA} ${HIERA_BASE_OPTS}"
 declare    HIERA_CMD="${HIERA_BASE_CMD} ${HIERA_EXTRA_OPTS}"
 
-for cert in ${CERTLIST_RAW}; do [ "${cert}" == "${cert/pe-internal-/}" ] && CERTLIST="${CERTLIST} ${cert}" ; done
-
+if [[ singlenode == 'true' ]] ; then 
+  CERTLIST=( "${nodename}" )
+else
+  for cert in ${CERTLIST_RAW}; do [ "${cert}" == "${cert/pe-internal-/}" ] && CERTLIST="${CERTLIST} ${cert}" ; done
+fi
 
 case "${fact_src}" in
-  'yaml' )
+  'yaml' | 'json' )
     for node in ${CERTLIST}; do
-      if [ ! -f "${node}.yaml" ] ; then echo "Warning, could not find ${node}.yaml.  Skipping." ; continue 1 ; fi
-      echo "Looking up hiera() call values for ${node}."
-      for ch in ${HIERA_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${node}.yaml ${ch})"; done
-      echo "Looking up hiera_array() call values for ${node}."
-      for cha in ${HIERA_A_LIST} ; do echo "${cha} is $(${HIERA_CMD} ${FILE_BASE}/${node}.yaml -a ${cha})"; done
-      echo "Looking up hiera_hash() call values for ${node}."
-      for chh in ${HIERA_H_LIST} ; do echo "${chh} is $(${HIERA_CMD} ${FILE_BASE}/${node}.yaml -h ${chh})"; done
-      echo "Looking up automatica paramater values for ${node}." 
-      for chp in ${HIERA_P_LIST[@]} ; do echo "${chp} is $(${HIERA_CMD} ${FILE_BASE}/${node}.yaml ${chp})"; done
-    done
-    ;;
-  'json' )
-    for node in ${CERTLIST}; do
-      if [ ! -f "${node}.json" ] ; then echo "Warning, could not find ${node}.json. Skipping." ; continue 1 ; fi
-      echo "Looking up hiera() call values for ${node}."
-      for ch in ${HIERA_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${node}.json ${ch})"; done
-      echo "Looking up hiera_array() call values for ${node}."
-      for cha in ${HIERA_A_LIST} ; do echo "${cha} is $(${HIERA__CMD} ${FILE_BASE}/${node}.json  -a ${cha})"; done
-      echo "Looking up hiera_hash() call values for ${node}."
-      for chh in ${HIERA_H_LIST} ; do echo "${chh} is $(${HIERA_CMD} ${FILE_BASE}/${node}.json  -h ${chh})"; done
-      echo "Looking up automatica paramater values for ${node}."
-      for chp in ${HIERA_P_LIST} ; do echo "${chp} is $(${HIERA_CMD} ${FILE_BASE}/${node}.json ${cp})"; done
+      if [ ! -f "${node}.${fact_src}" ] ; then echo "Warning, could not find ${node}.${fact_src}.  Skipping." ; continue 1 ; fi
+      if [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+        echo "Looking up hiera() call values."
+        for ch in ${HIERA_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${nodename}.${fact_src} ${ch})"; done
+        echo "Looking up automatic parameter lookups."
+        for ch in ${HIERA_P_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${nodename}.${fact_src} ${ch})"; done
+      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+        echo "Looking up hiera_array() call values."
+        for ch in ${HIERA_A_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${nodename}.${fact_src} ${ch})"; done
+      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+        echo "Looking up hiera_hash() call values."
+        for ch in ${HIERA_H_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${nodename}.${fact_src} ${ch})"; done
+      fi
     done
     ;;
   'user' )
     HIERA_CMD="sudo -u ${USER_NAME} ${HIERA} ${hiera_extra_opts} ${HIERA_BASE_OPTS}"
     grep -qF "${USER_NAME}" /etc/passwd || fail_sauce "User '${USER_NAME}' not found. Please check spelling. Exiting."
     for node in ${CERTLIST}; do
-      echo "Looking up hiera() call values for ${node}."
-      for ch in ${HIERA_LIST} ; do echo "${ch} is $( ${HIERA_CMD} -m ${node} ${ch})"; done
-      echo "Looking up hiera_array() call values for ${node}."
-      for cha in ${HIERA_A_LIST} ; do echo "${cha} is $( ${HIERA_CMD} -a -m ${node} ${cha})"; done
-      echo "Looking up hiera_hash() call values for ${node}."
-      for chh in ${HIERA_H_LIST} ; do echo "${chh} is $( ${HIERA_CMD} -h -m ${node} ${chh})"; done
-      echo "Looking up automatica paramater values for ${node}."
-      for chp in ${HIERA_P_LIST[@]} ; do echo "${chp} is $(${HIERA_CMD} -m ${node} ${chp})"; done
+      if [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+        echo "Looking up hiera() call values for ${node}."
+        for ch in ${HIERA_LIST} ; do echo "${ch} is $( ${HIERA_CMD} -m ${node} ${ch})"; done
+      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+        echo "Looking up hiera_array() call values for ${node}."
+        for cha in ${HIERA_A_LIST} ; do echo "${cha} is $( ${HIERA_CMD} -a -m ${node} ${cha})"; done
+      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+        echo "Looking up hiera_hash() call values for ${node}."
+        for chh in ${HIERA_H_LIST} ; do echo "${chh} is $( ${HIERA_CMD} -h -m ${node} ${chh})"; done
+      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+        echo "Looking up automatica paramater values for ${node}."
+        for chp in ${HIERA_P_LIST[@]} ; do echo "${chp} is $(${HIERA_CMD} -m ${node} ${chp})"; done
+      fi
     done
     ;;
   * )
