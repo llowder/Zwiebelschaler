@@ -67,10 +67,11 @@ declare -r LONG_OPTS="help,yaml,user:,json,debug,filebase:,key:,mode:,node:"
 declare -r SHORT_OPTS="hyu:jdf:k:m:n:"
 declare -r FILE_BASE="."
 declare    fact_src="user"
-declare    key_name=''
-declare    node_name=''
-declare    singlekey='false'
-declare    lookuptype='all'
+declare    key_name=""
+declare    node_name=""
+declare    singlekey="false"
+declare    singlenode="false"
+declare    lookuptype="all"
 
 if [ $# -gt 0 ]; then
   mutex_option='false'
@@ -113,7 +114,8 @@ if [ $# -gt 0 ]; then
       ;;
       n | node )
         nodename="${OPTARG}"
-        [[ -n nodename ]] || fail_sauce "Node name is required for --node.";;
+        [[ -n nodename ]] || fail_sauce "Node name is required for --node."
+        singlenode="true";;
       * ) echo "Unknown option -${OPTARG} (${opt})" >&2 ;;
     esac
   done
@@ -129,8 +131,8 @@ declare -r BASEMODULEPATH="$("${PUPPET_BIN}" config print basemodulepath 2> /dev
 # Assume directory environments are being used; we'll check for an empty $ENVIRONMENTPATH next and reset as-needed.
 mod_ep="${ENVIRONMENTPATH}"
 mod_bmp="${BASEMODULEPATH}"
-[[ ${ENVIRONMENTPATH} =~ '$confdir' ]] && mod_ep="${ENVIRONMENTPATH/'$confdir'/${CONFIGDIR}}"
-[[ ${BASEMODULEPATH} =~ '$confdir' ]]  && mod_bmp="${BASEMODULEPATH/'$confdir'/${CONFIGDIR}}"
+[[ "${ENVIRONMENTPATH}" =~ '$confdir' ]] && mod_ep="${ENVIRONMENTPATH/'$confdir'/${CONFIGDIR}}"
+[[ "${BASEMODULEPATH}" =~ '$confdir' ]]  && mod_bmp="${BASEMODULEPATH/'$confdir'/${CONFIGDIR}}"
 modulelist="${mod_ep} ${mod_bmp}"
 # -- This is our check for config directories in play, rather than directory environments.
 if [ "${ENVIRONMENTPATH}" == '' ]; then #config directories are in play
@@ -161,22 +163,24 @@ declare -r CERTLIST_RAW="$("${PUPPET_BIN}" cert list --all 2> /dev/null | grep -
 declare    CERTLIST=""
 declare -r VARLIST="$(grep -Pho "(?<=%\{)(.+)(?=\})" ${HIERADIR})"
 
-if [[ singlekey == 'true' ]]; then
-  HIERA_LIST=( "${key_name}" )
-  HIERA_A_LIST=( "${key_name}" )
-  HIERA_H_LIST=( "${key_name}" )
-  HIERA_P_LIST=( "${key_name}" )
+if [[ "${singlekey}" == 'true' ]]; then
+  HIERA_LIST=( "${keyname}" )
+  HIERA_P_LIST=( "${keyname}" )
+  HIERA_A_LIST=( "${keyname}" )
+  HIERA_H_LIST=( "${keyname}" )
 else
-  if [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+  if [[ "${lookuptype}" == 'all' ]] || [[ "${lookuptype}" == 'priority' ]]; then
     px=0
     for p in $(find / -name "*.pp" -exec awk -f ${BIN_DIR}/findparams.awk {} \;); do
       HIERA_P_LIST[px]=$p
       ((px++))
     done
     HIERA_LIST="$(for h in ${modulelist}; do grep -PIRho "(?<=hiera\(['|\"|$])([^'|^\"|^,|^\)]+)" ${h} | sort -u; done)"
-  elif [[ lookuptype -eq 'all' ]] || [[ lookuptype -eq 'array' ]]; then
+  fi
+  if [[ "${lookuptype}" == 'all' ]] || [[ "${lookuptype}" == 'array' ]]; then
     HIERA_A_LIST="$(for ha in ${modulelist}; do grep -PIRho "(?<=hiera_array\(['|\"|$])([^'|^\"|^,|^\)]+)" ${ha} | sort -u; done)"
-  elif [[ lookuptype -eq 'all' ]] || [[ lookuptype -eq 'hash' ]]; then
+  fi
+  if [[ "${lookuptype}" == 'all' ]] || [[ "${lookuptype}" == 'hash' ]]; then
     HIERA_H_LIST="$(for hh in ${modulelist}; do grep -PIRho "(?<=hiera_hash\(['|\"|$])([^'|^\"|^,|^\)]+)" ${hh} | sort -u; done)"
   fi
 fi
@@ -186,47 +190,50 @@ declare -r HIERA="$(which hiera)"
 declare -r HIERA_BASE_CMD="${HIERA} ${HIERA_BASE_OPTS}"
 declare    HIERA_CMD="${HIERA_BASE_CMD} ${HIERA_EXTRA_OPTS}"
 
-if [[ singlenode == 'true' ]] ; then 
+if [[ "${singlenode}" == 'true' ]] ; then 
   CERTLIST=( "${nodename}" )
 else
-  for cert in ${CERTLIST_RAW}; do [ "${cert}" == "${cert/pe-internal-/}" ] && CERTLIST="${CERTLIST} ${cert}" ; done
+  for cert in ${CERTLIST_RAW}; do [[ "${cert}" == "${cert/pe-internal-/}" ]] && CERTLIST="${CERTLIST} ${cert}" ; done
 fi
 
 case "${fact_src}" in
   'yaml' | 'json' )
     for node in ${CERTLIST}; do
       if [ ! -f "${node}.${fact_src}" ] ; then echo "Warning, could not find ${node}.${fact_src}.  Skipping." ; continue 1 ; fi
-      if [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+      if [[ "${lookuptype}" == 'all' ]] || [[ "${lookuptype}" == 'priority' ]]; then
         echo "Looking up hiera() call values."
-        for ch in ${HIERA_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${nodename}.${fact_src} ${ch})"; done
+        for ch in ${HIERA_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${node}.${fact_src} ${ch})"; done
         echo "Looking up automatic parameter lookups."
-        for ch in ${HIERA_P_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${nodename}.${fact_src} ${ch})"; done
-      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
-        echo "Looking up hiera_array() call values."
-        for ch in ${HIERA_A_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${nodename}.${fact_src} ${ch})"; done
-      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
-        echo "Looking up hiera_hash() call values."
-        for ch in ${HIERA_H_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${nodename}.${fact_src} ${ch})"; done
+        for ch in ${HIERA_P_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${node}.${fact_src} ${ch})"; done
       fi
+      if [[ "${lookuptype}" == 'all' ]] || [[ "${lookuptype}" == 'priority' ]]; then
+        echo "Looking up hiera_array() call values."
+        for ch in ${HIERA_A_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${node}.${fact_src} ${ch})"; done
+      fi
+      if [[ "${lookuptype}" == 'all' ]] || [[ "${lookuptype}" == 'priority' ]]; then
+        echo "Looking up hiera_hash() call values."
+        for ch in ${HIERA_H_LIST} ; do echo "${ch} is $(${HIERA_CMD} ${FILE_BASE}/${node}.${fact_src} ${ch})"; done
+      fi;
     done
     ;;
   'user' )
     HIERA_CMD="sudo -u ${USER_NAME} ${HIERA} ${hiera_extra_opts} ${HIERA_BASE_OPTS}"
     grep -qF "${USER_NAME}" /etc/passwd || fail_sauce "User '${USER_NAME}' not found. Please check spelling. Exiting."
     for node in ${CERTLIST}; do
-      if [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
+      if [[ "${lookuptype}" == "all" ]] || [[ "${lookuptype}" == 'priority' ]]; then
         echo "Looking up hiera() call values for ${node}."
         for ch in ${HIERA_LIST} ; do echo "${ch} is $( ${HIERA_CMD} -m ${node} ${ch})"; done
-      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
-        echo "Looking up hiera_array() call values for ${node}."
-        for cha in ${HIERA_A_LIST} ; do echo "${cha} is $( ${HIERA_CMD} -a -m ${node} ${cha})"; done
-      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
-        echo "Looking up hiera_hash() call values for ${node}."
-        for chh in ${HIERA_H_LIST} ; do echo "${chh} is $( ${HIERA_CMD} -h -m ${node} ${chh})"; done
-      elif [[ lookuptype == 'all' ]] || [[ lookuptype == 'priority' ]]; then
-        echo "Looking up automatica paramater values for ${node}."
+        echo "Looking up automatic paramater values for ${node}."
         for chp in ${HIERA_P_LIST[@]} ; do echo "${chp} is $(${HIERA_CMD} -m ${node} ${chp})"; done
       fi
+      if [[ "${lookuptype}" == 'all' ]] || [[ "${lookuptype}" == 'priority' ]]; then
+        echo "Looking up hiera_array() call values for ${node}."
+        for cha in ${HIERA_A_LIST} ; do echo "${cha} is $( ${HIERA_CMD} -a -m ${node} ${cha})"; done
+      fi
+      if [[ "${lookuptype}" == 'all' ]] || [[ "${lookuptype}" == 'priority' ]]; then
+        echo "Looking up hiera_hash() call values for ${node}."
+        for chh in ${HIERA_H_LIST} ; do echo "${chh} is $( ${HIERA_CMD} -h -m ${node} ${chh})"; done
+      fi;
     done
     ;;
   * )
