@@ -4,7 +4,7 @@
 ##About
 Zwiebelschaler, formerly the Glowing Octo Ninja (GON) is  designed to make debugging hiera related puppet issues easier. 
 
-This will get a list of all certnames that the puppet after knows about, then scan your modulepath and find all explicit `hiera()`,`hiera_array()`, and `hiera_hash()` calls, as well as all class paramaters, and extract the key names. It will then do the same hiera type of hiera lookup for each certificate the master is aware of.
+This will get a list of all certnames that the puppet master knows about, then scan your modulepath and find all explicit `hiera()`,`hiera_array()`, and `hiera_hash()` calls, as well as all class paramaters, and extract the key names. It will then do the same hiera type of hiera lookup for each certificate the master is aware of.
 
 Since facts are often needed to be able to properly traverse the hiera hierarchy, it can use mcollective, yaml files or json files as the source of these facts when making the lookups.
 
@@ -25,7 +25,7 @@ pe_puppetdb::pe::database::database_config_hash is nil
 pe_puppetdb::pe::java_args is nil
 ```
 
-When called with the `--yaml` or `--json` options, a file will need to be created for each certificate that holds key-value pairs for any variables used in your hierarchy.
+When called with the `--yaml` or `--json` options, a file will need to exist for each certificate, that holds key-value pairs for any variables used in your hierarchy.
 
 ###Options
 - `-h` or `--help`
@@ -40,7 +40,7 @@ When called with the `--yaml` or `--json` options, a file will need to be create
   - **Description**: Use `<clientcertname>.json` as the fact source.
 - `-d` or `--debug`
   - **Description**: Enable the `--debug` flag when calling hiera.
-- `-f <path>' or `--filebase <path>`
+- `-f <path>` or `--filebase <path>`
   - **Default**: `.`
   - **Description**: The path to be prepended to `<clientcertname>.[yaml|json]` when doing filebased fact source.
 
@@ -52,7 +52,7 @@ Simply clone the repo, and copy `zwiebel` into somewhere in your path or add the
 ##To Do
 1. ~~Fix the internal help~~
 1. ~~Locate and lookup class parameters~~
-1. Add ability to specify as single variable to look up across all nodes
+1. Add ability to specify a single variable to look up across all nodes
 1. Add ability to specify a plaintext key=value file per node as a fact source
 1. Add ability to look up all variables for a single node
 1. Add ability to specify a group of nodes via regex
